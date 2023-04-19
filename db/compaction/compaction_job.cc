@@ -57,6 +57,13 @@
 #include "test_util/sync_point.h"
 #include "util/stop_watch.h"
 
+// TODO: remove this
+//#define DEBUG__PRINT_LEVELS
+//#define DEBUG__BUILD_DICT
+#ifdef DEBUG__PRINT_LEVELS
+#include <iostream>
+#endif // def(DEBUG__PRINT_LEVELS)
+
 namespace ROCKSDB_NAMESPACE {
 
 const char* GetCompactionReasonString(CompactionReason compaction_reason) {
@@ -1124,6 +1131,18 @@ void CompactionJob::ProcessKeyValueCompaction(SubcompactionState* sub_compact) {
       file_options_for_read_, start, end));
   InternalIterator* input = raw_input.get();
 
+
+#ifdef DEBUG__PRINT_LEVELS
+  std::cout << "Inputs:";
+  for (size_t which = 0; which < sub_compact->compaction->num_input_levels(); which++) {
+    std::cout << " L";
+    std::cout << sub_compact->compaction->level(which);
+    std::cout << " " << sub_compact->compaction->num_input_files(which);
+  }
+  std::cout << " Output: L" << sub_compact->compaction->output_level();
+  std::cout << "                      " << std::endl;
+#endif // def(DEBUG__PRINT_LEVELS)
+
   IterKey start_ikey;
   IterKey end_ikey;
   Slice start_slice;
@@ -1270,8 +1289,9 @@ void CompactionJob::ProcessKeyValueCompaction(SubcompactionState* sub_compact) {
   // define the open and close functions for the compaction files, which will be
   // used open/close output files when needed.
   const CompactionFileOpenFunc open_file_func =
-      [this, sub_compact](CompactionOutputs& outputs) {
-        return this->OpenCompactionOutputFile(sub_compact, outputs);
+      [this, sub_compact, &c_iter](CompactionOutputs& outputs) {
+        return this->OpenCompactionOutputFile(sub_compact, c_iter.get(),
+                                              outputs);
       };
   const CompactionFileCloseFunc close_file_func =
       [this, sub_compact](CompactionOutputs& outputs, const Status& status,
@@ -1751,6 +1771,7 @@ void CompactionJob::RecordCompactionIOStats() {
 }
 
 Status CompactionJob::OpenCompactionOutputFile(SubcompactionState* sub_compact,
+                                               CompactionIterator* c_itr,
                                                CompactionOutputs& outputs) {
   assert(sub_compact != nullptr);
 
@@ -1887,6 +1908,20 @@ Status CompactionJob::OpenCompactionOutputFile(SubcompactionState* sub_compact,
       sub_compact->compaction->max_output_file_size(), file_number);
 
   outputs.NewBuilder(tboptions);
+
+#ifdef DEBUG__BUILD_DICT
+  // TODO: add option for using input compression dictionaries.
+  if (outputs.HasBuilder() && tboptions.compression_opts.max_dict_bytes > 0) {
+    std::string dict;
+    auto dict_s = c_itr->BuildDictionary(&dict,
+      tboptions.compression_opts.max_dict_bytes);
+    if (dict_s.ok()) {
+      // Immediately enter unbuffered mode with the
+      // dictionary built from the input files.
+      outputs.GetBuilder()->SetDictionary(std::move(dict));
+    }
+  }
+#endif
 
   LogFlush(db_options_.info_log);
   return s;

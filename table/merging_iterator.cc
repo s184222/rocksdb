@@ -548,6 +548,15 @@ class MergingIterator : public InternalIterator {
            current_->IsValuePinned();
   }
 
+  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) override {
+    assert(Valid());
+    if (current_->iter()) {
+      // TODO: build the merged dictionary.
+      return current_->iter()->BuildDictionary(dict, max_dict_bytes);
+    }
+    return Status::NotFound();
+  }
+
  private:
   friend class MergeIteratorBuilder;
   // Clears heaps for both directions, used when changing direction or seeking

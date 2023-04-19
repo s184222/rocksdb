@@ -288,6 +288,12 @@ class BlockBasedTable : public TableReader {
   TBlockIter* NewDataBlockIterator(const ReadOptions& ro,
                                    CachableEntry<Block>& block,
                                    TBlockIter* input_iter, Status s) const;
+  
+  Status FetchUncompressionDict(const ReadOptions&ro,
+                                GetContext* get_context,
+                                BlockCacheLookupContext* lookup_context,
+                                FilePrefetchBuffer* prefetch_buffer,
+                                CachableEntry<UncompressionDict>* dict) const;
 
   class PartitionedIndexIteratorState;
 

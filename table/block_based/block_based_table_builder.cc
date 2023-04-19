@@ -1920,6 +1920,22 @@ void BlockBasedTableBuilder::EnterUnbuffered() {
   }
 }
 
+void BlockBasedTableBuilder::SetDictionary(std::string&& dict) {
+  Rep* r = rep_;
+  // Check that dictionary compression is enabled
+  assert(r->compression_opts.max_dict_bytes);
+  if (r->state == Rep::State::kBuffered) {
+    // Ensure we have not buffered blocks after invocations of Add(...)
+    assert(r->data_block_buffers.empty());
+    r->compression_dict.reset(new CompressionDict(dict, r->compression_type,
+                                                  r->compression_opts.level));
+    r->verify_dict.reset(new UncompressionDict(
+        dict, r->compression_type == kZSTD ||
+                  r->compression_type == kZSTDNotFinalCompression));
+    r->state = Rep::State::kUnbuffered;
+  }
+}
+
 Status BlockBasedTableBuilder::Finish() {
   Rep* r = rep_;
   assert(r->state != Rep::State::kClosed);

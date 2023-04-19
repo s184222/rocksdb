@@ -104,6 +104,12 @@ class BlockBasedTableBuilder : public TableBuilder {
       const std::string& encoded_seqno_to_time_mapping,
       uint64_t oldest_ancestor_time) override;
 
+  // Sets the dictionary used for compression. This function is used during
+  // compaction when using the dictionaries that have already been trained
+  // for the input files.
+  // REQUIRES: Add(...), Finish(), Abandon() have not been called.
+  void SetDictionary(std::string&& dict) override;
+
  private:
   bool ok() const { return status().ok(); }
 

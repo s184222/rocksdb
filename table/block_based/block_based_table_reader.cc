@@ -2749,6 +2749,24 @@ Status BlockBasedTable::GetKVPairsFromDataBlocks(
   return Status::OK();
 }
 
+Status BlockBasedTable::FetchUncompressionDict(
+  const ReadOptions&ro, GetContext* get_context,
+  BlockCacheLookupContext* lookup_context,
+  FilePrefetchBuffer* prefetch_buffer,
+  CachableEntry<UncompressionDict>* dict) const {
+  if (rep_->uncompression_dict_reader) {
+    const bool no_io = (ro.read_tier == kBlockCacheTier);
+    // For async scans, don't use the prefetch buffer since an async prefetch
+    // might already be under way and this would invalidate it. Also, the
+    // uncompression dict is typically at the end of the file and would
+    // most likely break the sequentiality of the access pattern.
+    return rep_->uncompression_dict_reader->GetOrReadUncompressionDictionary(
+        ro.async_io ? nullptr : prefetch_buffer, no_io, ro.verify_checksums,
+        get_context, lookup_context, dict);
+  }
+  return Status::NotFound();
+}
+
 Status BlockBasedTable::DumpTable(WritableFile* out_file) {
   WritableFileStringStreamAdapter out_file_wrapper(out_file);
   std::ostream out_stream(&out_file_wrapper);

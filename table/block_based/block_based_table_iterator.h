@@ -174,6 +174,27 @@ class BlockBasedTableIterator : public InternalIteratorBase<Slice> {
     }
   }
 
+  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) override {
+    assert(Valid());
+    CachableEntry<UncompressionDict> uncompression_dict;
+    auto s = table_->FetchUncompressionDict(
+      read_options_, /*get_context=*/nullptr, &lookup_context_,
+      block_prefetcher_.prefetch_buffer(), &uncompression_dict);
+    if (!s.ok()) {
+      return s;
+    }
+    UncompressionDict* ptr = uncompression_dict.GetValue();
+    if (ptr == nullptr) {
+      return Status::NotFound();
+    }
+    // Copy raw dictionary contents
+    *dict = std::move(ptr->GetRawDict().ToString());
+    if (dict->empty()) {
+      return Status::NotFound("Dictionary is empty");
+    }
+    return Status::OK();
+  }
+
   std::unique_ptr<InternalIteratorBase<IndexValue>> index_iter_;
 
  private:

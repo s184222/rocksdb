@@ -56,6 +56,10 @@ class SequenceIterWrapper : public InternalIterator {
   Slice key() const override { return inner_iter_->key(); }
   Slice value() const override { return inner_iter_->value(); }
 
+  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) override {
+    return inner_iter_->BuildDictionary(dict, max_dict_bytes);
+  }
+
   // Unused InternalIterator methods
   void SeekToFirst() override { assert(false); }
   void Prev() override { assert(false); }
@@ -251,6 +255,10 @@ class CompactionIterator {
     return output_to_penultimate_level_;
   }
   Status InputStatus() const { return input_.status(); }
+  
+  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) {
+    return input_.BuildDictionary(dict, max_dict_bytes);
+  }
 
  private:
   // Processes the input stream to find the next output

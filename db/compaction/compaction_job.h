@@ -259,6 +259,7 @@ class CompactionJob {
                                     const Slice& next_table_min_key);
   Status InstallCompactionResults(const MutableCFOptions& mutable_cf_options);
   Status OpenCompactionOutputFile(SubcompactionState* sub_compact,
+                                  CompactionIterator* c_itr,
                                   CompactionOutputs& outputs);
   void UpdateCompactionJobStats(
       const InternalStats::CompactionStats& stats) const;

@@ -14,6 +14,7 @@
 #include "rocksdb/iterator.h"
 #include "rocksdb/status.h"
 #include "table/format.h"
+#include "util/compression.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -193,6 +194,10 @@ class InternalIteratorBase : public Cleanable {
   // used by MergingIterator and LevelIterator for now.
   virtual bool IsDeleteRangeSentinelKey() const { return false; }
 
+  virtual Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) {
+    return Status::NotSupported("");
+  }
+  
  protected:
   void SeekForPrevImpl(const Slice& target, const CompareInterface* cmp) {
     Seek(target);
