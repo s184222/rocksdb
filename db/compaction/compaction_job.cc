@@ -57,12 +57,6 @@
 #include "test_util/sync_point.h"
 #include "util/stop_watch.h"
 
-// TODO: remove this
-//#define DEBUG__PRINT_LEVELS
-#ifdef DEBUG__PRINT_LEVELS
-#include <iostream>
-#endif // def(DEBUG__PRINT_LEVELS)
-
 namespace ROCKSDB_NAMESPACE {
 
 const char* GetCompactionReasonString(CompactionReason compaction_reason) {
@@ -1129,18 +1123,6 @@ void CompactionJob::ProcessKeyValueCompaction(SubcompactionState* sub_compact) {
       read_options, sub_compact->compaction, range_del_agg.get(),
       file_options_for_read_, start, end));
   InternalIterator* input = raw_input.get();
-
-
-#ifdef DEBUG__PRINT_LEVELS
-  std::cout << "Inputs:";
-  for (size_t which = 0; which < sub_compact->compaction->num_input_levels(); which++) {
-    std::cout << " L";
-    std::cout << sub_compact->compaction->level(which);
-    std::cout << " " << sub_compact->compaction->num_input_files(which);
-  }
-  std::cout << " Output: L" << sub_compact->compaction->output_level();
-  std::cout << "                      " << std::endl;
-#endif // def(DEBUG__PRINT_LEVELS)
 
   IterKey start_ikey;
   IterKey end_ikey;
