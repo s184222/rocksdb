@@ -73,7 +73,8 @@ Status BuildTable(
     const std::string* full_history_ts_low,
     BlobFileCompletionCallback* blob_callback, Version* version,
     uint64_t* num_input_entries, uint64_t* memtable_payload_bytes,
-    uint64_t* memtable_garbage_bytes) {
+    uint64_t* memtable_garbage_bytes, ReusableDict* latest_used_dict,
+    bool* latest_used_dict_changed) {
   assert((tboptions.column_family_id ==
           TablePropertiesCollectorFactory::Context::kUnknownColumnFamily) ==
          tboptions.column_family_name.empty());
@@ -81,6 +82,10 @@ Status BuildTable(
   auto& ioptions = tboptions.ioptions;
   // Reports the IOStats for flush for every following bytes.
   const size_t kReportFlushIOStatsEvery = 1048576;
+  // Will be updated later if changed
+  if (latest_used_dict_changed != nullptr) {
+    *latest_used_dict_changed = false;
+  }
   OutputValidator output_validator(
       tboptions.internal_comparator,
       /*enable_order_check=*/
@@ -174,6 +179,10 @@ Status BuildTable(
           tmp_set.Contains(FileType::kTableFile), false));
 
       builder = NewTableBuilder(tboptions, file_writer.get());
+
+      if (latest_used_dict != nullptr && latest_used_dict->Valid()) {
+        builder->SetDictionary(*latest_used_dict);
+      }
     }
 
     auto ucmp = tboptions.internal_comparator.user_comparator();
@@ -385,6 +394,20 @@ Status BuildTable(
           /*largest_compaction_key*/ nullptr,
           /*allow_unprepared_value*/ false));
       s = it->status();
+      // Update the latest used dictionary from the iterator.
+      if (s.ok() && latest_used_dict != nullptr &&
+          latest_used_dict_changed != nullptr) {
+        ReusableDict builder_dict;
+        auto dict_s = it->BuildDictionary(
+            &builder_dict, tboptions.compression_opts.max_dict_bytes);
+        if (dict_s.ok()) {
+          *latest_used_dict = std::move(builder_dict);
+        } else {
+          // The dictionary was not good enough to be resused...
+          latest_used_dict->Invalidate();
+        }
+        *latest_used_dict_changed = true;
+      }
       if (s.ok() && paranoid_file_checks) {
         OutputValidator file_validator(tboptions.internal_comparator,
                                        /*enable_order_check=*/true,

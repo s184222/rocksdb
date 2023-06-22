@@ -188,7 +188,7 @@ class ClippingIterator : public InternalIterator {
     return iter_->GetProperty(prop_name, prop);
   }
 
-  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) override {
+  Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
     assert(valid_);
     return iter_->BuildDictionary(dict, max_dict_bytes);
   }

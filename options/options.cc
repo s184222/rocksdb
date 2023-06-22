@@ -245,6 +245,13 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
                      "        Options.compression_opts.parallel_threads: "
                      "%" PRIu32,
                      compression_opts.parallel_threads);
+    ROCKS_LOG_HEADER(
+        log, "        Options.compression_opts.flush_and_compaction_reuse_dict: %s",
+        compression_opts.flush_and_compaction_reuse_dict ? "true" : "false");
+    ROCKS_LOG_HEADER(log,
+                     "        Options.compression_opts.reuse_dict_threshold: "
+                     "%" PRIu32,
+                     compression_opts.reuse_dict_threshold);
     ROCKS_LOG_HEADER(log,
                      "                 Options.compression_opts.enabled: %s",
                      compression_opts.enabled ? "true" : "false");

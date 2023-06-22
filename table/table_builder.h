@@ -222,7 +222,15 @@ class TableBuilder {
   // compaction when using the dictionaries that have already been trained
   // for the input files.
   // REQUIRES: Add(...), Finish(), Abandon() have not been called.
-  virtual void SetDictionary(std::string&& /*dict*/) {}
+  virtual void SetDictionary(const ReusableDict& /*dict*/) {}
+
+  // Currently only used for BlockBasedTableBuilder. Returns the empty string
+  // for other table types.
+  //
+  // Retreives the dictionary that was used for compression or the empty string
+  // if the builder does not use compression dictionaries.
+  // REQUIRES: Finish() has been called
+  virtual std::string GetDictionary() const { return ""; }
 
 };
 

@@ -59,7 +59,6 @@
 
 // TODO: remove this
 //#define DEBUG__PRINT_LEVELS
-//#define DEBUG__BUILD_DICT
 #ifdef DEBUG__PRINT_LEVELS
 #include <iostream>
 #endif // def(DEBUG__PRINT_LEVELS)
@@ -1909,19 +1908,17 @@ Status CompactionJob::OpenCompactionOutputFile(SubcompactionState* sub_compact,
 
   outputs.NewBuilder(tboptions);
 
-#ifdef DEBUG__BUILD_DICT
-  // TODO: add option for using input compression dictionaries.
-  if (outputs.HasBuilder() && tboptions.compression_opts.max_dict_bytes > 0) {
-    std::string dict;
+  if (tboptions.compression_opts.max_dict_bytes > 0 &&
+      tboptions.compression_opts.flush_and_compaction_reuse_dict) {
+    ReusableDict dict;
     auto dict_s = c_itr->BuildDictionary(&dict,
       tboptions.compression_opts.max_dict_bytes);
     if (dict_s.ok()) {
       // Immediately enter unbuffered mode with the
       // dictionary built from the input files.
-      outputs.GetBuilder()->SetDictionary(std::move(dict));
+      outputs.GetBuilder()->SetDictionary(dict);
     }
   }
-#endif
 
   LogFlush(db_options_.info_log);
   return s;

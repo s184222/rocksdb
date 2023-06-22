@@ -104,6 +104,7 @@ void PropertyBlockBuilder::AddTableProperty(const TableProperties& props) {
   Add(TablePropertiesNames::kColumnFamilyId, props.column_family_id);
   Add(TablePropertiesNames::kCreationTime, props.creation_time);
   Add(TablePropertiesNames::kOldestKeyTime, props.oldest_key_time);
+  Add(TablePropertiesNames::kUncompressedDataSize, props.uncompressed_data_size);
   if (props.file_creation_time > 0) {
     Add(TablePropertiesNames::kFileCreationTime, props.file_creation_time);
   }
@@ -114,6 +115,9 @@ void PropertyBlockBuilder::AddTableProperty(const TableProperties& props) {
   if (props.fast_compression_estimated_data_size > 0) {
     Add(TablePropertiesNames::kFastCompressionEstimatedDataSize,
         props.fast_compression_estimated_data_size);
+  }
+  if (props.dict_best_ratio > 0) {
+    Add(TablePropertiesNames::kDictBestRatio, props.dict_best_ratio);
   }
   if (!props.db_id.empty()) {
     Add(TablePropertiesNames::kDbId, props.db_id);
@@ -307,6 +311,10 @@ Status ReadTablePropertiesHelper(
        &new_table_properties->slow_compression_estimated_data_size},
       {TablePropertiesNames::kFastCompressionEstimatedDataSize,
        &new_table_properties->fast_compression_estimated_data_size},
+      {TablePropertiesNames::kUncompressedDataSize,
+       &new_table_properties->uncompressed_data_size},
+      {TablePropertiesNames::kDictBestRatio,
+       &new_table_properties->dict_best_ratio},
   };
 
   std::string last_key;

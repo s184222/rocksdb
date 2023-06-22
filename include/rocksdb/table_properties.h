@@ -70,6 +70,8 @@ struct TablePropertiesNames {
   static const std::string kSlowCompressionEstimatedDataSize;
   static const std::string kFastCompressionEstimatedDataSize;
   static const std::string kSequenceNumberTimeMapping;
+  static const std::string kUncompressedDataSize;
+  static const std::string kDictBestRatio;
 };
 
 // `TablePropertiesCollector` provides the mechanism for users to collect
@@ -238,6 +240,13 @@ struct TableProperties {
   // file if the property exists.
   // 0 means not exists.
   uint64_t external_sst_file_global_seqno_offset = 0;
+  
+  // The uncompressed data size.
+  // 0 means unknown.
+  uint64_t uncompressed_data_size = 0;
+  // The best compression ratio achieved by the dictionary scaled by 2^32.
+  // 0 means unknown.
+  uint64_t dict_best_ratio = 0;
 
   // DB identity
   // db_id is an identifier generated the first time the DB is created

@@ -82,7 +82,7 @@ class HistoryTrimmingIterator : public InternalIterator {
 
   bool IsValuePinned() const override { return input_->IsValuePinned(); }
 
-  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) override {
+  Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
     return input_->BuildDictionary(dict, max_dict_bytes);
   }
 

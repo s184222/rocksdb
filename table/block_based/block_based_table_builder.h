@@ -105,10 +105,15 @@ class BlockBasedTableBuilder : public TableBuilder {
       uint64_t oldest_ancestor_time) override;
 
   // Sets the dictionary used for compression. This function is used during
-  // compaction when using the dictionaries that have already been trained
-  // for the input files.
+  // flushes and compaction when using the dictionaries that have already been
+  // trained for previous level 0 files or the input files.
   // REQUIRES: Add(...), Finish(), Abandon() have not been called.
-  void SetDictionary(std::string&& dict) override;
+  void SetDictionary(const ReusableDict& dict) override;
+
+  // Retreives the dictionary that was used for compression or the empty string
+  // if the builder does not use compression dictionaries.
+  // REQUIRES: Finish() has been called
+  std::string GetDictionary() const override;
 
  private:
   bool ok() const { return status().ok(); }

@@ -125,6 +125,24 @@ static Status ParseCompressionOptions(const std::string& value,
     compression_opts.use_zstd_dict_trainer = ParseBoolean("", field);
   }
 
+  // flush_and_compaction_reuse_dict is optional for backwards compatibility
+  if (!field_stream.eof()) {
+    if (!std::getline(field_stream, field, kDelimiter)) {
+      return Status::InvalidArgument(
+          "unable to parse the specified CF option " + name);
+    }
+    compression_opts.flush_and_compaction_reuse_dict = ParseBoolean("", field);
+  }
+
+  // reuse_dict_threshold is optional for backwards compatibility
+  if (!field_stream.eof()) {
+    if (!std::getline(field_stream, field, kDelimiter)) {
+      return Status::InvalidArgument(
+          "unable to parse the specified CF option " + name);
+    }
+    compression_opts.reuse_dict_threshold = ParseUint32(field);
+  }
+
   if (!field_stream.eof()) {
     return Status::InvalidArgument("unable to parse the specified CF option " +
                                    name);
@@ -168,6 +186,14 @@ static std::unordered_map<std::string, OptionTypeInfo>
         {"use_zstd_dict_trainer",
          {offsetof(struct CompressionOptions, use_zstd_dict_trainer),
           OptionType::kBoolean, OptionVerificationType::kNormal,
+          OptionTypeFlags::kMutable}},
+        {"flush_and_compaction_reuse_dict",
+         {offsetof(struct CompressionOptions, flush_and_compaction_reuse_dict),
+          OptionType::kBoolean, OptionVerificationType::kNormal,
+          OptionTypeFlags::kMutable}},
+        {"reuse_dict_threshold",
+         {offsetof(struct CompressionOptions, reuse_dict_threshold),
+          OptionType::kUInt32T, OptionVerificationType::kNormal,
           OptionTypeFlags::kMutable}},
 };
 

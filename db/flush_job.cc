@@ -829,6 +829,12 @@ Status FlushJob::WriteLevel0Table() {
   std::vector<BlobFileAddition> blob_file_additions;
 
   {
+    bool latest_used_dict_changed;
+    ReusableDict latest_used_dict;
+    if (mutable_cf_options_.compression_opts.max_dict_bytes > 0 &&
+        mutable_cf_options_.compression_opts.flush_and_compaction_reuse_dict) {
+      latest_used_dict = std::move(cfd_->GetLatestUsedDict());
+    }
     auto write_hint = cfd_->CalculateSSTWriteHint(0);
     Env::IOPriority io_priority = GetRateLimiterPriorityForWrite();
     db_mutex_->Unlock();
@@ -942,7 +948,8 @@ Status FlushJob::WriteLevel0Table() {
           BlobFileCreationReason::kFlush, seqno_to_time_mapping_, event_logger_,
           job_context_->job_id, io_priority, &table_properties_, write_hint,
           full_history_ts_low, blob_callback_, base_, &num_input_entries,
-          &memtable_payload_bytes, &memtable_garbage_bytes);
+          &memtable_payload_bytes, &memtable_garbage_bytes, &latest_used_dict,
+          &latest_used_dict_changed);
       // TODO: Cleanup io_status in BuildTable and table builders
       assert(!s.ok() || io_s.ok());
       io_s.PermitUncheckedError();
@@ -982,6 +989,11 @@ Status FlushJob::WriteLevel0Table() {
     }
     TEST_SYNC_POINT_CALLBACK("FlushJob::WriteLevel0Table", &mems_);
     db_mutex_->Lock();
+    if (latest_used_dict_changed &&
+        mutable_cf_options_.compression_opts.max_dict_bytes > 0 &&
+        mutable_cf_options_.compression_opts.flush_and_compaction_reuse_dict) {
+      cfd_->SetLatestUsedDict(std::move(latest_used_dict));
+    }
   }
   base_->Unref();
 

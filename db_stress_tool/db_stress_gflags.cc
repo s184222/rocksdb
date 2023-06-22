@@ -827,6 +827,14 @@ DEFINE_bool(
     "ZSTD 1.4.5+ is required. If ZSTD 1.4.5+ is not linked with the binary, "
     "this flag will have the default value true.");
 
+DEFINE_bool(
+    compression_flush_and_compaction_reuse_dict, true,
+    "Whether to reuse the dictionary that has been trained by ZSTD.");
+
+DEFINE_int32(compression_reuse_dict_threshold, 0,
+             "Reuse threshold specified in percentage. A value of 0 is used "
+             "to indicate that the dictionary should always be reused.");
+
 DEFINE_string(bottommost_compression_type, "disable",
               "Algorithm to use to compress bottommost level of the database. "
               "\"disable\" means disabling the feature");

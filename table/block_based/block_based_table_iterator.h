@@ -174,8 +174,14 @@ class BlockBasedTableIterator : public InternalIteratorBase<Slice> {
     }
   }
 
-  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) override {
+  Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
     assert(Valid());
+    // Retreive the best ratio from the properties
+    auto scaled_best_ratio = table_->GetTableProperties()->dict_best_ratio;
+    if (scaled_best_ratio == 0) {
+      // Should not reuse the dictionary...
+      return Status::NotFound();
+    }
     CachableEntry<UncompressionDict> uncompression_dict;
     auto s = table_->FetchUncompressionDict(
       read_options_, /*get_context=*/nullptr, &lookup_context_,
@@ -188,10 +194,13 @@ class BlockBasedTableIterator : public InternalIteratorBase<Slice> {
       return Status::NotFound();
     }
     // Copy raw dictionary contents
-    *dict = std::move(ptr->GetRawDict().ToString());
-    if (dict->empty()) {
+    auto raw_dict = ptr->GetRawDict().ToString();
+    if (raw_dict.empty()) {
       return Status::NotFound("Dictionary is empty");
     }
+    double best_ratio = static_cast<double>(scaled_best_ratio) /
+        (UINT64_C(1) << 32);
+    *dict = { raw_dict, best_ratio };
     return Status::OK();
   }
 

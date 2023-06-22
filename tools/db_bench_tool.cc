@@ -1332,6 +1332,15 @@ DEFINE_bool(compression_use_zstd_dict_trainer,
             "If true, use ZSTD_TrainDictionary() to create dictionary, else"
             "use ZSTD_FinalizeDictionary() to create dictionary");
 
+DEFINE_bool(compression_flush_and_compaction_reuse_dict,
+            ROCKSDB_NAMESPACE::CompressionOptions().flush_and_compaction_reuse_dict,
+            "Whether to reuse the dictionary that has been trained by ZSTD.");
+
+DEFINE_uint32(compression_reuse_dict_threshold,
+              ROCKSDB_NAMESPACE::CompressionOptions().reuse_dict_threshold,
+              "Reuse threshold specified in percentage. A value of 0 is used "
+             "to indicate that the dictionary should always be reused.");
+
 static bool ValidateTableCacheNumshardbits(const char* flagname,
                                            int32_t value) {
   if (0 >= value || value >= 20) {
@@ -4142,6 +4151,10 @@ class Benchmark {
         FLAGS_compression_max_dict_buffer_bytes;
     options.compression_opts.use_zstd_dict_trainer =
         FLAGS_compression_use_zstd_dict_trainer;
+    options.compression_opts.flush_and_compaction_reuse_dict =
+        FLAGS_compression_flush_and_compaction_reuse_dict;
+    options.compression_opts.reuse_dict_threshold =
+        FLAGS_compression_reuse_dict_threshold;
 
     options.max_open_files = FLAGS_open_files;
     if (FLAGS_cost_write_buffer_to_cache || FLAGS_db_write_buffer_size != 0) {

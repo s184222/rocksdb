@@ -56,7 +56,7 @@ class SequenceIterWrapper : public InternalIterator {
   Slice key() const override { return inner_iter_->key(); }
   Slice value() const override { return inner_iter_->value(); }
 
-  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) override {
+  Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
     return inner_iter_->BuildDictionary(dict, max_dict_bytes);
   }
 
@@ -256,7 +256,7 @@ class CompactionIterator {
   }
   Status InputStatus() const { return input_.status(); }
   
-  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) {
+  Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) {
     return input_.BuildDictionary(dict, max_dict_bytes);
   }
 

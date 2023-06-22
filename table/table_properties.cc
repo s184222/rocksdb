@@ -143,6 +143,11 @@ std::string TableProperties::ToString(const std::string& prop_delim,
   AppendProperty(result, "fast compression estimated data size",
                  fast_compression_estimated_data_size, prop_delim, kv_delim);
 
+  AppendProperty(result, "uncompressed data size",
+                 uncompressed_data_size, prop_delim, kv_delim);
+  AppendProperty(result, "scaled (2^32) dict best ratio",
+                 dict_best_ratio, prop_delim, kv_delim);
+
   // DB identity and DB session ID
   AppendProperty(result, "DB identity", db_id, prop_delim, kv_delim);
   AppendProperty(result, "DB session identity", db_session_id, prop_delim,
@@ -187,6 +192,7 @@ void TableProperties::Add(const TableProperties& tp) {
       tp.slow_compression_estimated_data_size;
   fast_compression_estimated_data_size +=
       tp.fast_compression_estimated_data_size;
+  uncompressed_data_size += tp.uncompressed_data_size;
 }
 
 std::map<std::string, uint64_t>
@@ -209,6 +215,7 @@ TableProperties::GetAggregatablePropertiesAsMap() const {
       slow_compression_estimated_data_size;
   rv["fast_compression_estimated_data_size"] =
       fast_compression_estimated_data_size;
+  rv["uncompressed_data_size"] = uncompressed_data_size;
   return rv;
 }
 
@@ -303,6 +310,10 @@ const std::string TablePropertiesNames::kFastCompressionEstimatedDataSize =
     "rocksdb.sample_for_compression.fast.data.size";
 const std::string TablePropertiesNames::kSequenceNumberTimeMapping =
     "rocksdb.seqno.time.map";
+const std::string TablePropertiesNames::kUncompressedDataSize =
+    "rocksdb.uncompressed_data_size";
+const std::string TablePropertiesNames::kDictBestRatio =
+    "rocksdb.dict_best_ratio";
 
 #ifndef NDEBUG
 // WARNING: TEST_SetRandomTableProperties assumes the following layout of

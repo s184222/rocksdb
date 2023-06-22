@@ -314,6 +314,15 @@ class ColumnFamilyData {
     flush_reason_ = flush_reason;
   }
   FlushReason GetFlushReason() const { return flush_reason_; }
+  // REQUIRES: DB mutex held
+  void SetLatestUsedDict(ReusableDict latest_used_dict) {
+    latest_used_dict_ = std::move(latest_used_dict);
+  }
+  // REQUIRES: DB mutex held
+  ReusableDict GetLatestUsedDict() const {
+    // Explicitly copy the dictionary...
+    return { latest_used_dict_.Dictionary(), latest_used_dict_.BestRatio() };
+  }
   // thread-safe
   const FileOptions* soptions() const;
   const ImmutableOptions* ioptions() const { return &ioptions_; }
@@ -617,6 +626,12 @@ class ColumnFamilyData {
   uint64_t log_number_;
 
   std::atomic<FlushReason> flush_reason_;
+
+  // Contains the latest dictionary that was used to compress a level 0 files
+  // after a flush operation, or an invalid ReusableDict if compression does not
+  // use dictionaries or the dictionary did not perform well. When the appropriate
+  // setting is enabled, the dictionary is reused for other level 0 files.
+  ReusableDict latest_used_dict_;
 
   // An object that keeps all the compaction stats
   // and picks the next compaction

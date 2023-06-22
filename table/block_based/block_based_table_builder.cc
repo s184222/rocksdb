@@ -337,6 +337,9 @@ struct BlockBasedTableBuilder::Rep {
   std::unique_ptr<ParallelCompressionRep> pc_rep;
   BlockCreateContext create_context;
 
+  bool has_reused_dict;
+  double dict_best_ratio;
+
   uint64_t get_offset() { return offset.load(std::memory_order_relaxed); }
   void set_offset(uint64_t o) { offset.store(o, std::memory_order_relaxed); }
 
@@ -447,6 +450,8 @@ struct BlockBasedTableBuilder::Rep {
         create_context(&table_options, ioptions.stats,
                        compression_type == kZSTD ||
                            compression_type == kZSTDNotFinalCompression),
+        has_reused_dict(false),
+        dict_best_ratio(1.0),
         status_ok(true),
         io_status_ok(true) {
     if (tbo.target_file_size == 0) {
@@ -1085,6 +1090,7 @@ void BlockBasedTableBuilder::WriteBlock(const Slice& uncompressed_block_data,
   if (is_data_block) {
     r->props.data_size = r->get_offset();
     ++r->props.num_data_blocks;
+    r->props.uncompressed_data_size += uncompressed_block_data.size();
   }
 }
 
@@ -1376,6 +1382,7 @@ void BlockBasedTableBuilder::BGWorkWriteMaybeCompressedBlock() {
 
     r->props.data_size = r->get_offset();
     ++r->props.num_data_blocks;
+    r->props.uncompressed_data_size += block_rep->contents.size();
 
     if (block_rep->first_key_in_next_block == nullptr) {
       r->index_builder->AddIndexEntry(&(block_rep->keys->Back()), nullptr,
@@ -1675,6 +1682,42 @@ void BlockBasedTableBuilder::WritePropertiesBlock(
           rep_->compressible_input_data_bytes +
           rep_->uncompressible_input_data_bytes;
     }
+    if (rep_->compression_dict && rep_->props.uncompressed_data_size != 0) {
+      // Data size without the trailer.
+      assert(rep_->props.data_size >=
+          kBlockTrailerSize * rep_->props.num_data_blocks);
+      uint64_t data_size = rep_->props.data_size -
+          kBlockTrailerSize * rep_->props.num_data_blocks;
+      double ratio = static_cast<double>(data_size) /
+          rep_->props.uncompressed_data_size;
+      double best_ratio;
+      if (rep_->has_reused_dict) {
+        // The ratio might have gotten better.
+        best_ratio = std::min(ratio, rep_->dict_best_ratio);
+      } else {
+        // The first time we use this dictionary.
+        best_ratio = ratio;
+      }
+      bool reuse_dict = true;
+      const auto threshold = rep_->compression_opts.reuse_dict_threshold;
+      if (threshold != 0) {
+        // Check if we should even use the dictionary again
+        if (100 * (0.875 / best_ratio - 1.0) <= threshold) {
+          reuse_dict = false;
+        }
+        if (100 * (ratio / best_ratio - 1.0) > threshold) {
+          reuse_dict = false;
+        }
+      }
+      if (reuse_dict) {
+        // Scale the best ratio by 2^32.
+        rep_->props.dict_best_ratio = static_cast<uint64_t>(
+            best_ratio * (UINT64_C(1) << 32));
+      } else {
+        // Dicard the dictionary next time...
+        rep_->props.dict_best_ratio = 0;
+      }
+    }
 
     // Add basic properties
     property_block_builder.AddTableProperty(rep_->props);
@@ -1920,20 +1963,32 @@ void BlockBasedTableBuilder::EnterUnbuffered() {
   }
 }
 
-void BlockBasedTableBuilder::SetDictionary(std::string&& dict) {
+void BlockBasedTableBuilder::SetDictionary(const ReusableDict& dict) {
   Rep* r = rep_;
   // Check that dictionary compression is enabled
   assert(r->compression_opts.max_dict_bytes);
   if (r->state == Rep::State::kBuffered) {
     // Ensure we have not buffered blocks after invocations of Add(...)
     assert(r->data_block_buffers.empty());
-    r->compression_dict.reset(new CompressionDict(dict, r->compression_type,
+    r->compression_dict.reset(new CompressionDict(dict.Dictionary(),
+                                                  r->compression_type,
                                                   r->compression_opts.level));
     r->verify_dict.reset(new UncompressionDict(
-        dict, r->compression_type == kZSTD ||
-                  r->compression_type == kZSTDNotFinalCompression));
+        dict.Dictionary(), r->compression_type == kZSTD ||
+                           r->compression_type == kZSTDNotFinalCompression));
     r->state = Rep::State::kUnbuffered;
+    r->has_reused_dict = true;
+    r->dict_best_ratio = dict.BestRatio();
   }
+}
+
+std::string BlockBasedTableBuilder::GetDictionary() const
+{
+  Rep* r = rep_;
+  if (r->compression_dict == nullptr) {
+    return "";
+  }
+  return r->compression_dict->GetRawDict().ToString();
 }
 
 Status BlockBasedTableBuilder::Finish() {

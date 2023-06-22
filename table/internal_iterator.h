@@ -194,7 +194,7 @@ class InternalIteratorBase : public Cleanable {
   // used by MergingIterator and LevelIterator for now.
   virtual bool IsDeleteRangeSentinelKey() const { return false; }
 
-  virtual Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) {
+  virtual Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) {
     return Status::NotSupported("");
   }
   

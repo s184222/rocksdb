@@ -548,7 +548,7 @@ class MergingIterator : public InternalIterator {
            current_->IsValuePinned();
   }
 
-  Status BuildDictionary(std::string* dict, uint32_t max_dict_bytes) override {
+  Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
     assert(Valid());
     if (current_->iter()) {
       // TODO: build the merged dictionary.

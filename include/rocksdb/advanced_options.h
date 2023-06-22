@@ -194,6 +194,30 @@ struct CompressionOptions {
   // Default: true
   bool use_zstd_dict_trainer;
 
+  // Reuse the dictionaries for output files in compaction that have already been
+  // built on the input files. This helps reduce the amount of work that has to
+  // be done for training the dictionary. During flushes, the dictionary of
+  // previous level 0 files will be reused for future level 0 files.
+  //
+  // Default: true
+  bool flush_and_compaction_reuse_dict;
+
+  // Reuse threshold specified in percentage. This threshold is used to determine
+  // when a dictionary should be reused, by the relative performance of the dict
+  // after being reused. If the relative performance is worse than the threshold
+  // given in percentage, then the dictionary is not reused again. This value
+  // has no effect if the option flush_and_compaction_reuse_dict is false. In
+  // particular, if R* is the current best compression ratio (specified as the
+  // compressed size / uncompressed size), and R' be the compression ratio achieved
+  // after reusing the dictionary. Then if 100 * (R' / R* - 1.0) > T, where T is
+  // the threshold, the dictionary will not be reused next time. Naturally, if
+  // 100 * (0.875 / R* - 1.0) < T, we will also not reuse the dictionary since this
+  // is the expected compression ratio using no dictionary. A value of 0 is used to
+  // indicate that the dictionary should always be reused.
+  //
+  // Default: 0
+  uint32_t reuse_dict_threshold;
+
   CompressionOptions()
       : window_bits(-14),
         level(kDefaultCompressionLevel),
@@ -203,12 +227,16 @@ struct CompressionOptions {
         parallel_threads(1),
         enabled(false),
         max_dict_buffer_bytes(0),
-        use_zstd_dict_trainer(true) {}
+        use_zstd_dict_trainer(true),
+        flush_and_compaction_reuse_dict(true),
+        reuse_dict_threshold(0) {}
   CompressionOptions(int wbits, int _lev, int _strategy,
                      uint32_t _max_dict_bytes, uint32_t _zstd_max_train_bytes,
                      uint32_t _parallel_threads, bool _enabled,
                      uint64_t _max_dict_buffer_bytes,
-                     bool _use_zstd_dict_trainer)
+                     bool _use_zstd_dict_trainer,
+                     bool _flush_and_compaction_reuse_dict,
+                     uint32_t _reuse_dict_threshold)
       : window_bits(wbits),
         level(_lev),
         strategy(_strategy),
@@ -217,7 +245,9 @@ struct CompressionOptions {
         parallel_threads(_parallel_threads),
         enabled(_enabled),
         max_dict_buffer_bytes(_max_dict_buffer_bytes),
-        use_zstd_dict_trainer(_use_zstd_dict_trainer) {}
+        use_zstd_dict_trainer(_use_zstd_dict_trainer),
+        flush_and_compaction_reuse_dict(_flush_and_compaction_reuse_dict),
+        reuse_dict_threshold(_reuse_dict_threshold) {}
 };
 
 // Temperature of a file. Used to pass to FileSystem for a different

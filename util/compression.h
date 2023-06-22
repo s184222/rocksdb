@@ -359,6 +359,48 @@ struct UncompressionDict {
   UncompressionDict& operator=(const CompressionDict&) = delete;
 };
 
+struct ReusableDict {
+  
+  ReusableDict() :
+    dict_(""), best_ratio_(1.0) { }
+
+  ReusableDict(std::string dict, double best_ratio) :
+    dict_(std::move(dict)), best_ratio_(best_ratio) { }
+  
+  ReusableDict(ReusableDict&& other) {
+    *this = std::move(other);
+  }
+
+  ReusableDict& operator=(ReusableDict&& other) {
+    dict_ = std::move(other.dict_);
+    best_ratio_ = other.best_ratio_;
+    return *this;
+  }
+
+  inline const std::string& Dictionary() const { return dict_; }
+
+  // Returns the best ratio achieved by this compression dictionary
+  // where ratio = compressed_size / uncompressed_size.
+  inline double BestRatio() const { return best_ratio_; }
+
+  inline bool Valid() const { return !dict_.empty(); }
+
+  inline void Invalidate() {
+    dict_ = "";
+    best_ratio_ = 1.0;
+  }
+
+  // Disable copy
+  ReusableDict(const ReusableDict&) = delete;
+  ReusableDict& operator=(const ReusableDict&) = delete;
+  
+private:
+  // Block containing the data for the compression dictionary.
+  std::string dict_;
+  // Best compression ratio achieved with this compression dictionary.
+  double best_ratio_;
+};
+
 class CompressionContext {
  private:
 #if defined(ZSTD) && (ZSTD_VERSION_NUMBER >= 500)
@@ -662,6 +704,12 @@ inline std::string CompressionOptionsToString(
       .append("; ");
   result.append("use_zstd_dict_trainer=")
       .append(std::to_string(compression_options.use_zstd_dict_trainer))
+      .append("; ");
+  result.append("flush_and_compaction_reuse_dict=")
+      .append(std::to_string(compression_options.flush_and_compaction_reuse_dict))
+      .append("; ");
+  result.append("reuse_dict_threshold=")
+      .append(std::to_string(compression_options.reuse_dict_threshold))
       .append("; ");
   return result;
 }
