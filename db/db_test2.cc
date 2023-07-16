@@ -1429,6 +1429,9 @@ TEST_F(DBTest2, PresetCompressionDictLocality) {
   options.compression = kZSTD;
   options.compression_opts.max_dict_bytes = 1 << 14;        // 16KB
   options.compression_opts.zstd_max_train_bytes = 1 << 18;  // 256KB
+  // Do not reuse dictionaries for this test.
+  options.compression_opts.flush_and_compaction_reuse_dict = false;
+  options.bottommost_compression_opts.flush_and_compaction_reuse_dict = false;
   options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
   options.target_file_size_base = kNumEntriesPerFile * kNumBytesPerEntry;
   BlockBasedTableOptions table_options;

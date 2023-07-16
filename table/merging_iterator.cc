@@ -549,9 +549,9 @@ class MergingIterator : public InternalIterator {
   }
 
   Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
-    assert(Valid());
+    assert(current_ != nullptr);
     if (current_->iter()) {
-      // TODO: build the merged dictionary.
+      // TODO: choose the dictionary with highest overlap.
       return current_->iter()->BuildDictionary(dict, max_dict_bytes);
     }
     return Status::NotFound();

@@ -189,7 +189,6 @@ class ClippingIterator : public InternalIterator {
   }
 
   Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
-    assert(valid_);
     return iter_->BuildDictionary(dict, max_dict_bytes);
   }
 

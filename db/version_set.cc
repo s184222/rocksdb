@@ -1052,8 +1052,7 @@ class LevelIterator final : public InternalIterator {
   bool IsDeleteRangeSentinelKey() const override { return to_return_sentinel_; }
 
   Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
-    assert(Valid());
-    if (file_iter_.iter() && file_iter_.iter()->Valid()) {
+    if (file_iter_.iter()) {
       return file_iter_.iter()->BuildDictionary(dict, max_dict_bytes);
     }
     return Status::NotFound("Missing file iterator");

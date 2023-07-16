@@ -84,7 +84,7 @@ TEST_F(OptionsTest, GetOptionsFromMapTest) {
        "kZSTDNotFinalCompression"},
       {"bottommost_compression", "kLZ4Compression"},
       {"bottommost_compression_opts", "5:6:7:8:10:true"},
-      {"compression_opts", "4:5:6:7:8:2:true:100:false"},
+      {"compression_opts", "4:5:6:7:8:2:true:100:false:true:10"},
       {"num_levels", "8"},
       {"level0_file_num_compaction_trigger", "8"},
       {"level0_slowdown_writes_trigger", "9"},
@@ -213,6 +213,8 @@ TEST_F(OptionsTest, GetOptionsFromMapTest) {
   ASSERT_EQ(new_cf_opt.compression_opts.enabled, true);
   ASSERT_EQ(new_cf_opt.compression_opts.max_dict_buffer_bytes, 100u);
   ASSERT_EQ(new_cf_opt.compression_opts.use_zstd_dict_trainer, false);
+  ASSERT_EQ(new_cf_opt.compression_opts.flush_and_compaction_reuse_dict, true);
+  ASSERT_EQ(new_cf_opt.compression_opts.reuse_dict_threshold, 10);
   ASSERT_EQ(new_cf_opt.bottommost_compression, kLZ4Compression);
   ASSERT_EQ(new_cf_opt.bottommost_compression_opts.window_bits, 5);
   ASSERT_EQ(new_cf_opt.bottommost_compression_opts.level, 6);
@@ -224,6 +226,10 @@ TEST_F(OptionsTest, GetOptionsFromMapTest) {
   ASSERT_EQ(new_cf_opt.bottommost_compression_opts.enabled, true);
   ASSERT_EQ(new_cf_opt.bottommost_compression_opts.use_zstd_dict_trainer,
             CompressionOptions().use_zstd_dict_trainer);
+  ASSERT_EQ(new_cf_opt.bottommost_compression_opts.flush_and_compaction_reuse_dict,
+            CompressionOptions().flush_and_compaction_reuse_dict);
+  ASSERT_EQ(new_cf_opt.bottommost_compression_opts.reuse_dict_threshold,
+            CompressionOptions().reuse_dict_threshold);
   ASSERT_EQ(new_cf_opt.num_levels, 8);
   ASSERT_EQ(new_cf_opt.level0_file_num_compaction_trigger, 8);
   ASSERT_EQ(new_cf_opt.level0_slowdown_writes_trigger, 9);
@@ -2323,7 +2329,7 @@ TEST_F(OptionsOldApiTest, GetOptionsFromMapTest) {
        "kZSTDNotFinalCompression"},
       {"bottommost_compression", "kLZ4Compression"},
       {"bottommost_compression_opts", "5:6:7:8:9:true"},
-      {"compression_opts", "4:5:6:7:8:9:true:10:false"},
+      {"compression_opts", "4:5:6:7:8:9:true:10:false:true:10"},
       {"num_levels", "8"},
       {"level0_file_num_compaction_trigger", "8"},
       {"level0_slowdown_writes_trigger", "9"},
@@ -2448,6 +2454,8 @@ TEST_F(OptionsOldApiTest, GetOptionsFromMapTest) {
   ASSERT_EQ(new_cf_opt.compression_opts.enabled, true);
   ASSERT_EQ(new_cf_opt.compression_opts.max_dict_buffer_bytes, 10u);
   ASSERT_EQ(new_cf_opt.compression_opts.use_zstd_dict_trainer, false);
+  ASSERT_EQ(new_cf_opt.compression_opts.flush_and_compaction_reuse_dict, true);
+  ASSERT_EQ(new_cf_opt.compression_opts.reuse_dict_threshold, 10);
   ASSERT_EQ(new_cf_opt.bottommost_compression, kLZ4Compression);
   ASSERT_EQ(new_cf_opt.bottommost_compression_opts.window_bits, 5);
   ASSERT_EQ(new_cf_opt.bottommost_compression_opts.level, 6);
@@ -2461,6 +2469,10 @@ TEST_F(OptionsOldApiTest, GetOptionsFromMapTest) {
             CompressionOptions().max_dict_buffer_bytes);
   ASSERT_EQ(new_cf_opt.bottommost_compression_opts.use_zstd_dict_trainer,
             CompressionOptions().use_zstd_dict_trainer);
+  ASSERT_EQ(new_cf_opt.bottommost_compression_opts.flush_and_compaction_reuse_dict,
+            CompressionOptions().flush_and_compaction_reuse_dict);
+  ASSERT_EQ(new_cf_opt.bottommost_compression_opts.reuse_dict_threshold,
+            CompressionOptions().reuse_dict_threshold);
   ASSERT_EQ(new_cf_opt.num_levels, 8);
   ASSERT_EQ(new_cf_opt.level0_file_num_compaction_trigger, 8);
   ASSERT_EQ(new_cf_opt.level0_slowdown_writes_trigger, 9);

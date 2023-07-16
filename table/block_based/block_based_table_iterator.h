@@ -175,7 +175,6 @@ class BlockBasedTableIterator : public InternalIteratorBase<Slice> {
   }
 
   Status BuildDictionary(ReusableDict* dict, uint32_t max_dict_bytes) override {
-    assert(Valid());
     // Retreive the best ratio from the properties
     auto scaled_best_ratio = table_->GetTableProperties()->dict_best_ratio;
     if (scaled_best_ratio == 0) {
